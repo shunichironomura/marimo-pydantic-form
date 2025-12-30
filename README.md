@@ -1,4 +1,5 @@
 # python-package-template
+
 This is a template repository for Python package development.
 
 ## Features
