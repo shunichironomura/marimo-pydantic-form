@@ -59,7 +59,7 @@ line-length = 120
 select = ["ALL"]
 # Modify the following rules according to your preferences
 ignore = [
-  # "PLR2004", # magic numbers
+  "PLR2004",  # magic numbers
   "S101",  # use of assert
   "G",  # logging format
   # "ANN101",  # missing type annotation for self in method

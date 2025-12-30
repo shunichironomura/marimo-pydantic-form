@@ -59,6 +59,46 @@ jobs:
       - name: Run mypy
         run: uv run -- mypy .
 
+  basedpyright:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Install the project
+        run: uv sync --no-dev --group typing
+
+      - name: Run pyright
+        run: uv run -- basedpyright .
+
+  ty:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+      - name: Install the project
+        run: uv sync --no-dev --group typing
+      - name: Run ty
+        run: uv run -- ty check
+
   pytest:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
@@ -99,9 +139,24 @@ jobs:
       #     message: "Update tox report"
       #     push: "origin HEAD:${{ github.head_ref }} --force"
 
+  markdownlint:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+
+      - name: Install markdownlint-cli
+        run: npm install -g markdownlint-cli
+
+      - name: Run markdownlint
+        run: markdownlint .
+
   collect:
     if: github.event.pull_request.draft == false
-    needs: [ruff, mypy, pytest]
+    needs: [ruff, mypy, pytest, basedpyright, ty, markdownlint]
     runs-on: ubuntu-latest
     steps:
       - name: Collect results

@@ -1,0 +1,58 @@
+"""Helper functions for working with Pydantic models."""
+
+from collections.abc import Generator
+
+from pydantic import BaseModel
+from pydantic.fields import FieldInfo
+
+type ModelPath = tuple[str, ...]
+
+
+def iter_leaf_fields(model: type[BaseModel]) -> Generator[tuple[ModelPath, FieldInfo]]:
+    """Iterate over all leaf fields of a Pydantic model, including nested models."""
+    for field_name, field_info in model.model_fields.items():
+        if hasattr(field_info, "annotation") and issubclass(field_info.annotation, BaseModel):
+            # Nested Pydantic model
+            nested_model = field_info.annotation
+            for child_path, child_field_info in iter_leaf_fields(nested_model):
+                yield ((field_name, *child_path), child_field_info)
+        else:
+            yield ((field_name,), field_info)
+
+
+def access_field(model: BaseModel, path: ModelPath) -> object:
+    """Access a field of a Pydantic model given a path."""
+    current_value: object = model
+    for key in path:
+        if isinstance(current_value, BaseModel):
+            current_value = getattr(current_value, key)
+        else:
+            msg = f"Cannot access key '{key}' on non-BaseModel value '{current_value}'"
+            raise TypeError(msg)
+    return current_value
+
+
+def flatten_model[T: BaseModel](model: T) -> dict[ModelPath, object]:
+    """Flatten a Pydantic model into a dictionary of paths to values."""
+    flat_dict = {}
+    for path, _ in iter_leaf_fields(type(model)):
+        flat_dict[path] = access_field(model, path)
+    return flat_dict
+
+
+def unflatten_model[T: BaseModel](model_cls: type[T], flat_dict: dict[ModelPath, object]) -> T:
+    """Reconstruct a Pydantic model from a flattened dictionary of paths to values."""
+    root_dict: dict[str, object] = {}
+    for field_name, field_info in model_cls.model_fields.items():
+        if hasattr(field_info, "annotation") and issubclass(field_info.annotation, BaseModel):
+            # Nested Pydantic model
+            nested_model_cls = field_info.annotation
+            nested_flat_dict = {path[1:]: value for path, value in flat_dict.items() if path[0] == field_name}
+            nested_model = unflatten_model(nested_model_cls, nested_flat_dict)
+            root_dict[field_name] = nested_model
+        elif (field_name,) in flat_dict:
+            root_dict[field_name] = flat_dict[(field_name,)]
+        else:
+            msg = f"Field '{field_name}' not found in flat_dict"
+            raise KeyError(msg)
+    return model_cls.model_validate(root_dict)
