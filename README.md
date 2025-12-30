@@ -93,21 +93,6 @@ Convert form values back to Pydantic model instances:
 model_instance = builder.parse(form.value)
 ```
 
-## Development
-
-This project uses:
-- [uv](https://docs.astral.sh/uv/) for Python project management
-- [Ruff](https://docs.astral.sh/ruff/) for linting and formatting
-- [mypy](https://mypy.readthedocs.io/en/stable/) for type checking
-- [pytest](https://docs.pytest.org/en/stable/) for testing
-- [pre-commit](https://pre-commit.com/) for pre-commit hooks
-
-### Setup
-
-1. Install [uv](https://docs.astral.sh/uv/)
-2. Clone the repository
-3. Run `uv run pre-commit install` to set up pre-commit hooks
-
 ## License
 
 See [LICENSE](LICENSE) file for details.
