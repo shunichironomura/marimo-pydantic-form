@@ -1,6 +1,6 @@
 [project]
 name = "marimo-pydantic-form"
-version = "0"
+version = "0.1.0"
 description = "marimo form defined by a Pydantic model"
 readme = "README.md"
 requires-python = ">=3.13"
