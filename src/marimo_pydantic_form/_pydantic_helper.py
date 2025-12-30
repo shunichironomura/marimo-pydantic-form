@@ -2,6 +2,7 @@
 
 from collections.abc import Generator
 from dataclasses import dataclass
+from inspect import isclass
 from typing import ClassVar, Self
 
 from pydantic import BaseModel
@@ -42,7 +43,11 @@ class FieldPath:
 def iter_leaf_fields(model: type[BaseModel]) -> Generator[tuple[FieldPath, FieldInfo]]:
     """Iterate over all leaf fields of a Pydantic model, including nested models."""
     for field_name, field_info in model.model_fields.items():
-        if hasattr(field_info, "annotation") and issubclass(field_info.annotation, BaseModel):
+        if (
+            hasattr(field_info, "annotation")
+            and isclass(field_info.annotation)
+            and issubclass(field_info.annotation, BaseModel)
+        ):
             # Nested Pydantic model
             nested_model = field_info.annotation
             for child_path, child_field_info in iter_leaf_fields(nested_model):
@@ -56,16 +61,16 @@ def access_field(model: BaseModel, path: FieldPath) -> object:
     current_value: object = model
     for key in path.parts:
         if isinstance(current_value, BaseModel):
-            current_value = getattr(current_value, key)
+            current_value = getattr(current_value, key)  # pyright: ignore[reportAny]
         else:
             msg = f"Cannot access key '{key}' on non-BaseModel value '{current_value}'"
             raise TypeError(msg)
     return current_value
 
 
-def flatten_model[T: BaseModel](model: T) -> dict[FieldPath, object]:
+def flatten_model(model: BaseModel) -> dict[FieldPath, object]:
     """Flatten a Pydantic model into a dictionary of paths to values."""
-    flat_dict = {}
+    flat_dict: dict[FieldPath, object] = {}
     for path, _ in iter_leaf_fields(type(model)):
         flat_dict[path] = access_field(model, path)
     return flat_dict
@@ -75,7 +80,11 @@ def unflatten_model[T: BaseModel](model_cls: type[T], flat_dict: dict[FieldPath,
     """Reconstruct a Pydantic model from a flattened dictionary of paths to values."""
     root_dict: dict[str, object] = {}
     for field_name, field_info in model_cls.model_fields.items():
-        if hasattr(field_info, "annotation") and issubclass(field_info.annotation, BaseModel):
+        if (
+            hasattr(field_info, "annotation")
+            and isclass(field_info.annotation)
+            and issubclass(field_info.annotation, BaseModel)
+        ):
             # Nested Pydantic model
             nested_model_cls = field_info.annotation
             nested_flat_dict = {

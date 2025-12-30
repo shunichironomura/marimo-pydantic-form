@@ -12,14 +12,14 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from marimo._output.hypertext import Html
-    from marimo._plugins.core.web_component import JSONType
+    from marimo._plugins.core.web_component import JSONType  # pyright: ignore[reportMissingTypeStubs]
     from marimo._plugins.ui._core.ui_element import UIElement
 
 
 @dataclass(slots=True)
 class PydanticFormBuilder[T: BaseModel]:
     model: type[T]
-    ui: dict[str, UIElement] = field(default_factory=dict)
+    ui: dict[str, UIElement[object, object]] = field(default_factory=dict)
 
     def _default_markdown(self) -> Html:
         lines = [f"### {self.model.__name__} Form"]
@@ -43,9 +43,9 @@ class PydanticFormBuilder[T: BaseModel]:
         validate: Callable[[JSONType | None], str | None] | None = None,
         label: str = "",
         on_change: Callable[[dict[str, object] | None], None] | None = None,
-    ) -> mo.ui.form:
+    ) -> mo.ui.form[dict[str, object], dict[str, object]]:
         """Build a Marimo form for the Pydantic model."""
-        field_path_to_ui: dict[FieldPath, UIElement] = {}
+        field_path_to_ui: dict[FieldPath, UIElement[object, object]] = {}
         leaf_field_paths = {field_path for field_path, _ in iter_leaf_fields(self.model)}
         for field_path_dotted, ui_element in self.ui.items():
             field_path = FieldPath.from_dotted(field_path_dotted)

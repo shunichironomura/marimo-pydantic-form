@@ -5,8 +5,9 @@ app = marimo.App(width="full")
 
 with app.setup:
     import marimo as mo
-    from marimo_pydantic_form import PydanticFormBuilder
     from pydantic import BaseModel
+
+    from marimo_pydantic_form import PydanticFormBuilder
 
 
 @app.cell
@@ -14,17 +15,18 @@ def _():
     class Inner(BaseModel):
         a: int
 
-
     class Model(BaseModel):
         x: float
         y: Inner
+
     return (Model,)
 
 
 @app.cell
 def _(Model):
     builder = PydanticFormBuilder(
-        model=Model, ui={"x": mo.ui.slider(0, 100, label="x"), "y.a": mo.ui.slider(0, 100, label="y.a")}
+        model=Model,
+        ui={"x": mo.ui.slider(0, 100, label="x"), "y.a": mo.ui.slider(0, 100, label="y.a")},
     )
     return (builder,)
 
@@ -39,7 +41,6 @@ def _(builder):
 @app.cell
 def _(builder, form):
     builder.parse(form.value)
-    return
 
 
 @app.cell

@@ -57,7 +57,7 @@ jobs:
         run: uv sync --no-dev --group typing
 
       - name: Run mypy
-        run: uv run -- mypy .
+        run: uv run -- mypy src
 
   basedpyright:
     if: github.event.pull_request.draft == false
@@ -79,7 +79,7 @@ jobs:
         run: uv sync --no-dev --group typing
 
       - name: Run pyright
-        run: uv run -- basedpyright .
+        run: uv run -- basedpyright src
 
   ty:
     if: github.event.pull_request.draft == false
@@ -97,7 +97,7 @@ jobs:
       - name: Install the project
         run: uv sync --no-dev --group typing
       - name: Run ty
-        run: uv run -- ty check
+        run: uv run -- ty check src
 
   pytest:
     if: github.event.pull_request.draft == false
