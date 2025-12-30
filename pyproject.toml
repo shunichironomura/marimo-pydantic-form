@@ -10,11 +10,11 @@ authors = [
 dependencies = [
   "marimo>=0.18.4",
   "pydantic>=2.12.5",
-  "typing-extensions>=4.14.0",
 ]
 
 [dependency-groups]
 dev = [
+  "mcp>=1.25.0",
   "pre-commit>=4.2.0",
   { include-group = "ruff" },
   { include-group = "test" },

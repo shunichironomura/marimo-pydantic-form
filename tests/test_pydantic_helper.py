@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 
-from marimo_pydantic_form.pydantic_helper import flatten_model, iter_leaf_fields, unflatten_model
+from marimo_pydantic_form._pydantic_helper import FieldPath, flatten_model, iter_leaf_fields, unflatten_model
 
 
 def test_iter_leaf_fields_no_fields() -> None:
@@ -19,7 +19,7 @@ def test_iter_leaf_fields_single() -> None:
     fields = list(iter_leaf_fields(SingleFieldModel))
     assert len(fields) == 1
     path, field_info = fields[0]
-    assert path == ("value",)
+    assert path.parts == ("value",)
     assert isinstance(field_info, FieldInfo)
     assert field_info.annotation is int
 
@@ -36,12 +36,12 @@ def test_iter_leaf_fields_nested() -> None:
     assert len(fields) == 2
 
     path1, field_info1 = fields[0]
-    assert path1 == ("outer_value",)
+    assert path1.parts == ("outer_value",)
     assert isinstance(field_info1, FieldInfo)
     assert field_info1.annotation is str
 
     path2, field_info2 = fields[1]
-    assert path2 == ("inner", "inner_value")
+    assert path2.parts == ("inner", "inner_value")
     assert isinstance(field_info2, FieldInfo)
     assert field_info2.annotation is float
 
@@ -58,9 +58,9 @@ def test_flatten_model() -> None:
     obj = Outer(x=1.5, y=Inner(a=10, b="test"))
     flat = flatten_model(obj)
     assert flat == {
-        ("x",): 1.5,
-        ("y", "a"): 10,
-        ("y", "b"): "test",
+        FieldPath(("x",)): 1.5,
+        FieldPath(("y", "a")): 10,
+        FieldPath(("y", "b")): "test",
     }
 
 
@@ -74,9 +74,9 @@ def test_unflatten_model() -> None:
         y: Inner
 
     flat = {
-        ("x",): 1.5,
-        ("y", "a"): 10,
-        ("y", "b"): "test",
+        FieldPath(("x",)): 1.5,
+        FieldPath(("y", "a")): 10,
+        FieldPath(("y", "b")): "test",
     }
     obj = unflatten_model(Outer, flat)
     assert isinstance(obj, Outer)
