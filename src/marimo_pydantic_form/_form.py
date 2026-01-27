@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 import marimo as mo
 from pydantic import BaseModel
 
-from ._pydantic_helper import FieldPath, iter_leaf_fields, unflatten_model
+from ._pydantic_helper import FieldPath, iter_leaf_fields, iter_model_structure, unflatten_model
+from ._ui_generator import field_name_to_label, generate_ui_element
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -20,13 +21,65 @@ if TYPE_CHECKING:
 class PydanticFormBuilder[T: BaseModel]:
     model: type[T]
     ui: dict[str, UIElement[object, object]] = field(default_factory=dict)
+    auto_generate: bool = True
 
     def _default_markdown(self) -> Html:
-        lines = [f"### {self.model.__name__} Form"]
-        for field_path, _field_info in iter_leaf_fields(self.model):
-            lines.append(f"{{{field_path.as_normalized}}}")
-            lines.append("")
+        """Generate hierarchical markdown with headers for nested models."""
+        lines = [f"### {self.model.__name__} Form", ""]
+        nesting_level = 0
+
+        for item in iter_model_structure(self.model):
+            if item[0] == "field":
+                _, field_path, _field_info = item
+                lines.append(f"{{{field_path.as_normalized}}}")
+                lines.append("")
+            elif item[0] == "nested_start":
+                _, field_name, _nested_model = item
+                nesting_level += 1
+                # Use h4, h5, h6 for nested levels (h3 is the form title)
+                header_level = min(3 + nesting_level, 6)
+                header = "#" * header_level
+                label = field_name_to_label(field_name)
+                lines.append(f"{header} {label}")
+                lines.append("")
+            elif item[0] == "nested_end":
+                nesting_level -= 1
+
         return mo.md("\n".join(lines))
+
+    def _get_ui_elements(self) -> dict[FieldPath, UIElement[object, object]]:
+        """Get UI elements for all fields, combining auto-generated and manual overrides.
+
+        Manual overrides take precedence over auto-generated elements.
+        """
+        field_path_to_ui: dict[FieldPath, UIElement[object, object]] = {}
+        leaf_fields = list(iter_leaf_fields(self.model))
+        leaf_field_paths = {field_path for field_path, _ in leaf_fields}
+
+        # Validate manual UI paths
+        for field_path_dotted in self.ui:
+            field_path = FieldPath.from_dotted(field_path_dotted)
+            if field_path not in leaf_field_paths:
+                msg = f"Field path {field_path_dotted} is not a valid leaf field path of model {self.model.__name__}"
+                raise ValueError(msg)
+
+        # Process each field
+        for field_path, field_info in leaf_fields:
+            dotted = field_path.as_dotted
+
+            if dotted in self.ui:
+                # Use manual override
+                field_path_to_ui[field_path] = self.ui[dotted]
+            elif self.auto_generate:
+                # Auto-generate (may raise UnsupportedTypeError)
+                ui_element = generate_ui_element(field_path, field_info)
+                field_path_to_ui[field_path] = ui_element
+            else:
+                # No auto-generation, field must be manually specified
+                msg = f"No UI element provided for field '{dotted}' and auto_generate is False"
+                raise ValueError(msg)
+
+        return field_path_to_ui
 
     def build(  # noqa: PLR0913
         self,
@@ -45,14 +98,7 @@ class PydanticFormBuilder[T: BaseModel]:
         on_change: Callable[[dict[str, object] | None], None] | None = None,
     ) -> mo.ui.form[dict[str, object], dict[str, object]]:
         """Build a Marimo form for the Pydantic model."""
-        field_path_to_ui: dict[FieldPath, UIElement[object, object]] = {}
-        leaf_field_paths = {field_path for field_path, _ in iter_leaf_fields(self.model)}
-        for field_path_dotted, ui_element in self.ui.items():
-            field_path = FieldPath.from_dotted(field_path_dotted)
-            if field_path not in leaf_field_paths:
-                msg = f"Field path {field_path_dotted} is not a valid leaf field path of model {self.model.__name__}"
-                raise ValueError(msg)
-            field_path_to_ui[field_path] = ui_element
+        field_path_to_ui = self._get_ui_elements()
 
         normalized_field_path_to_ui = {
             field_path.as_normalized: ui_element for field_path, ui_element in field_path_to_ui.items()

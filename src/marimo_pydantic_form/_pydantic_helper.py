@@ -3,10 +3,17 @@
 from collections.abc import Generator
 from dataclasses import dataclass
 from inspect import isclass
-from typing import ClassVar, Self
+from typing import ClassVar, Literal, Self
 
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
+
+# Type alias for model structure items
+ModelStructureItem = (
+    tuple[Literal["field"], "FieldPath", FieldInfo]
+    | tuple[Literal["nested_start"], str, type[BaseModel]]
+    | tuple[Literal["nested_end"], str, type[BaseModel]]
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +61,35 @@ def iter_leaf_fields(model: type[BaseModel]) -> Generator[tuple[FieldPath, Field
                 yield (FieldPath((field_name, *child_path.parts)), child_field_info)
         else:
             yield (FieldPath((field_name,)), field_info)
+
+
+def iter_model_structure(
+    model: type[BaseModel],
+    prefix: tuple[str, ...] = (),
+) -> Generator[ModelStructureItem]:
+    """Iterate over a Pydantic model's structure.
+
+    Yields items that describe both leaf fields and nested model boundaries.
+
+    Yields:
+        - ("field", FieldPath, FieldInfo) for leaf fields
+        - ("nested_start", field_name, nested_model_class) when entering a nested model
+        - ("nested_end", field_name, nested_model_class) when exiting a nested model
+
+    """
+    for field_name, field_info in model.model_fields.items():
+        if (
+            hasattr(field_info, "annotation")
+            and isclass(field_info.annotation)
+            and issubclass(field_info.annotation, BaseModel)
+        ):
+            # Nested Pydantic model
+            nested_model = field_info.annotation
+            yield ("nested_start", field_name, nested_model)
+            yield from iter_model_structure(nested_model, (*prefix, field_name))
+            yield ("nested_end", field_name, nested_model)
+        else:
+            yield ("field", FieldPath((*prefix, field_name)), field_info)
 
 
 def access_field(model: BaseModel, path: FieldPath) -> object:
