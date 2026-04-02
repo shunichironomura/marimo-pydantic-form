@@ -100,3 +100,6 @@ unfixable = [
   "S101",  # use of assert
 ]
 "example.py" = ["ANN202", "ANN001", "D100", "B018", "N803"]
+
+[tool.uv]
+exclude-newer = "7 days"
