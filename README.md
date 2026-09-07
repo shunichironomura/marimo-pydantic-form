@@ -35,20 +35,20 @@ import marimo as mo
 from pydantic import BaseModel
 from marimo_pydantic_form import PydanticFormBuilder
 
+
 class Inner(BaseModel):
     a: int
+
 
 class Model(BaseModel):
     x: float
     y: Inner
 
+
 # Create a form builder with custom UI elements
 builder = PydanticFormBuilder(
     model=Model,
-    ui={
-        "x": mo.ui.slider(0, 100, label="x"),
-        "y.a": mo.ui.slider(0, 100, label="y.a")
-    },
+    ui={"x": mo.ui.slider(0, 100, label="x"), "y.a": mo.ui.slider(0, 100, label="y.a")},
 )
 
 # Build the form
@@ -77,11 +77,7 @@ Assign custom marimo UI elements to specific fields using dot notation for neste
 
 ```python
 builder = PydanticFormBuilder(
-    model=Model,
-    ui={
-        "field_name": mo.ui.text(label="Custom Label"),
-        "nested.field": mo.ui.slider(0, 100)
-    }
+    model=Model, ui={"field_name": mo.ui.text(label="Custom Label"), "nested.field": mo.ui.slider(0, 100)}
 )
 ```
 
