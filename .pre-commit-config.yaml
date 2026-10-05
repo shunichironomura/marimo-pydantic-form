@@ -5,7 +5,7 @@ ci:
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: 39d9ac5938dadb73df0564a45f163e25ff9fa6e2 # frozen: v0.16.1
+    rev: f12be1ebaa5351c1fc76472de98db2c3446c8253  # frozen: v0.16.10
     hooks:
       # Run the linter.
       - id: ruff
@@ -35,11 +35,11 @@ repos:
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     # uv version.
-    rev: 8ff2449591c8de025b17661ba76d60237a1ae62b # frozen: 0.12.1
+    rev: a1785f8e81fe9936d828bef574e6db07e8c8c374  # frozen: 0.12.23
     hooks:
       - id: uv-lock
 
   - repo: https://github.com/rvben/rumdl-pre-commit
-    rev: 4f7fb84c204d04a8b458ad18ca6cd63417d524a9 # frozen: v0.2.55
+    rev: 83cecb6b523a053d7d3dfdc4798d705b505a88f9  # frozen: v0.2.78
     hooks:
       - id: rumdl
