@@ -169,9 +169,11 @@ jobs:
         run: gh actions-lock --verify
 
   collect:
-    if: github.event.pull_request.draft == false
+    if: ${{ always() && github.event.pull_request.draft == false }}
     needs: [ruff, mypy, pytest, basedpyright, ty, rumdl, actions-lock]
     runs-on: ubuntu-latest
     steps:
-      - name: Collect results
-        run: echo "All checks passed!"
+      - name: Require every job to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: echo "$RESULTS" | jq -e 'all(.[]; .result == "success")'
