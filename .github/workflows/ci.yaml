@@ -146,7 +146,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
 
       - name: Run rumdl
-        uses: rvben/rumdl@v0.2.55
+        uses: rvben/rumdl@v0.3.2
         with:
           version: "0.2.55"
           report-type: annotations
